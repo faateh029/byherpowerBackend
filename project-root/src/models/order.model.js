@@ -23,8 +23,6 @@ const orderSchema = new mongoose.Schema({
      enum: ["pending", "shipped", "delivered", "cancelled"],
      default: "pending" }
 }, 
-{ 
-    timestamps: true 
-});
+{ timestamps: true });
 
 export default mongoose.model("Order", orderSchema);
