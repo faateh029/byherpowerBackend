@@ -1,6 +1,6 @@
 // error.middleware.js
 
-export const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, next) => {
   console.error(err.stack); // Log error stack trace (you can replace with Winston or other logger)
 
   const statusCode = err.statusCode || 500;
@@ -11,3 +11,5 @@ export const errorHandler = (err, req, res, next) => {
     error: message,
   });
 };
+
+export default errorHandler;
