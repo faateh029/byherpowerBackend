@@ -18,10 +18,10 @@ const productSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Store", required: true 
 },
-  category: { 
+  category: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Category", required: true 
-            },
+            }],
   reviews: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Review" 
