@@ -8,6 +8,7 @@ import { cartRouter } from "./routes/cart.routes.js";
 import { adminAnalyticsRouter } from "./routes/adminAnalytics.routes.js";
 import { categoryRouter } from "./routes/category.routes.js";
 import { couponRouter } from "./routes/coupon.routes.js";
+import { orderRouter } from "./routes/order.routes.js";
 dotenv.config();
 connectDB();
 const app = express();
@@ -18,6 +19,7 @@ app.use("/cart" , cartRouter);
 app.use("/admin" , adminAnalyticsRouter);
 app.use("/category" , categoryRouter);
 app.use("/coupon" , couponRouter);
+app.use("/order" , orderRouter);
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
