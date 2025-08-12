@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyToken } from "../middleware/jwtMiddleware.js";
+import { verifyToken } from "../middleware/auth.middleware.js";
 import {
     initiatePaymentController,
     verifyPaymentController,
