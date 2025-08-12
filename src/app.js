@@ -10,6 +10,8 @@ import { categoryRouter } from "./routes/category.routes.js";
 import { couponRouter } from "./routes/coupon.routes.js";
 import { orderRouter } from "./routes/order.routes.js";
 import { paymentRouter } from "./routes/payment.routes.js";
+import { productRouter } from "./routes/products.routes.js";
+import { productUploadRouter } from "./routes/productUpload.routes.js";
 dotenv.config();
 connectDB();
 const app = express();
@@ -22,6 +24,8 @@ app.use("/category" , categoryRouter);
 app.use("/coupon" , couponRouter);
 app.use("/order" , orderRouter);
 app.use("/payment" , paymentRouter);
+app.use("/products" , productRouter);
+app.use("/uploadProduct",productUploadRouter);
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
