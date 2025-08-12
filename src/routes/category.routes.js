@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { verifyToken } from "../middleware/jwtMiddleware.js";
-import { allowedRole } from "../middleware/allowRole.js";
+import { verifyToken } from "../middleware/auth.middleware.js";
+import { allowedRole } from "../middleware/role.middleware.js";
 import {
     createCategoryController,
     getAllCategoriesController,

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { verifyToken } from '../middleware/jwtMiddleware.js';
-import { allowedRole } from '../middleware/allowRole.js';
+import { verifyToken } from '../middleware/auth.middleware.js';
+import { allowedRole } from '../middleware/role.middleware.js';
 import {
   createCouponController,
   getCouponsController,
@@ -11,13 +11,13 @@ import {
 export const couponRouter = Router();
 
 // Create coupon (Admin/Seller)
-couponRouter.post('/coupons/create', verifyToken, allowedRole("admin", "seller"), createCouponController);
+couponRouter.post('/create', verifyToken, allowedRole("admin", "seller"), createCouponController);
 
 // Get available coupons
-couponRouter.get('/coupons', getCouponsController);
+couponRouter.get('/', getCouponsController);
 
 // Apply coupon at checkout
-couponRouter.post('/coupons/apply', verifyToken, allowedRole("customer"), applyCouponController);
+couponRouter.post('/apply', verifyToken, allowedRole("customer"), applyCouponController);
 
 // Delete coupon
-couponRouter.delete('/coupons/:couponId', verifyToken, allowedRole("admin", "seller"), deleteCouponController);
+couponRouter.delete('/:couponId', verifyToken, allowedRole("admin", "seller"), deleteCouponController);
