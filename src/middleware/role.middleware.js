@@ -1,14 +1,12 @@
-// middleware/allowRole.js
 
-export const allowedRole = (...roles) => {
-    //next();
-  return (req, res, next) => {
-//     if (!req.user || !roles.includes(req.user.role)) {
-//       return res.status(403).json({
-//         success: false,
-//         message: "Access denied. You do not have permission to perform this action."
-//       });
-//     }
-    next();
-   };
-};
+export const allowedRoles =  (...roles)=>{
+     return (req , res,next)=>{
+  if(roles.includes(req.user.role)){
+        return next();
+      }else{
+        const error = new Error("Access denied");
+        throw error;
+      }
+     } 
+}
+

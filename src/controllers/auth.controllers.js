@@ -1,3 +1,9 @@
+// controllers/auth.controllers.js
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import User from "../models/user.model.js"; // Assuming you have a User model
+import logger from "../config/logger.js";
+
 export const signupController = async (req, res, next) => {
   res.status(200).json({
     success: true,
