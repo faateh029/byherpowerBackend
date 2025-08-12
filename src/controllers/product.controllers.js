@@ -123,19 +123,86 @@ export const getAllProductsController = async (req, res, next) => {
 // Function to get a single product by ID
 export const getProductByIdController = async (req, res, next) => {
   // Logic to fetch a single product by ID will go here
-  res.status(200).json({
-    success: true,
-    message: "Product fetched successfully."
-  });
+  try {
+        const { id } = req.params;
+
+        if (!id || id.trim() === "") {
+            const error = new Error("Invalid product ID.");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const product = await Product.findById(id);
+
+        if (!product) {
+            const error = new Error("Product not found.");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                product
+            }
+        });
+    } catch (err) {
+        next(err); // Pass to your global error handler
+    }
 };
 
 // Function to update an existing product (seller only)
+
+// @desc    Update a product
+// @route   PUT /products/:id
+// @access  Seller only (must own the product)
 export const updateProductController = async (req, res, next) => {
-  // Logic to update a product in the database will go here
-  res.status(200).json({
-    success: true,
-    message: "Product updated successfully."
-  });
+  try {
+    const productId = req.params.id;
+    const userId = req.user.id; // from verifyToken middleware
+
+    // 1️⃣ Find product
+    const product = await Product.findById(productId);
+    if (!product) {
+      const err = new Error("Product not found");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // 2️⃣ Check if seller owns the product
+    if (product.seller.toString() !== userId) {
+      const err = new Error("Not authorized to update this product");
+      err.statusCode = 403;
+      throw err;
+    }
+
+    // 3️⃣ Define fields allowed to update
+    const allowedUpdates = ["name", "description", "price", "stock", "category", "images"];
+    const updates = {};
+
+    for (let key of allowedUpdates) {
+      if (req.body[key] !== undefined) {
+        updates[key] = req.body[key];
+      }
+    }
+
+    // 4️⃣ Update product
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    // 5️⃣ Send success response
+    res.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      data: updatedProduct
+    });
+
+  } catch (error) {
+    next(error); // goes to your errorHandler
+  }
 };
 
 // Function to delete a product (seller only)
