@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { verifyToken } from '../middleware/jwtMiddleware.js';
-import { allowedRole } from '../middleware/allowRole.js';
+import { verifyToken } from '../middleware/auth.middleware.js';
+import { allowedRole } from '../middleware/role.middleware.js';
 import {
   addWishlistItemController,
   removeWishlistItemController,
@@ -10,10 +10,10 @@ import {
 export const wishlistRouter = Router();
 
 // Add product to wishlist
-wishlistRouter.post('/wishlist/add', verifyToken, allowedRole("customer"), addWishlistItemController);
+wishlistRouter.post('/add', verifyToken, allowedRole("customer"), addWishlistItemController);
 
 // Remove product from wishlist
-wishlistRouter.delete('/wishlist/remove/:productId', verifyToken, allowedRole("customer"), removeWishlistItemController);
+wishlistRouter.delete('/remove/:productId', verifyToken, allowedRole("customer"), removeWishlistItemController);
 
 // Get customer's wishlist
-wishlistRouter.get('/wishlist', verifyToken, allowedRole("customer"), getWishlistController);
+wishlistRouter.get('/', verifyToken, allowedRole("customer"), getWishlistController);

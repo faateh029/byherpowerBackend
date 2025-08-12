@@ -17,6 +17,7 @@ import { sellerDashboardRouter } from "./routes/sellerDashboard.routes.js";
 import { storeFollowRouter } from "./routes/storeFollow.routes.js";
 import { storeRouter } from "./routes/stores.routes.js";
 import { userRouter } from "./routes/users.routes.js";
+import { wishlistRouter } from "./routes/wishlist.routes.js";
 dotenv.config();
 connectDB();
 const app = express();
@@ -36,6 +37,7 @@ app.use("/seller/dashboard" , sellerDashboardRouter);
 app.use("/storeFollow" , storeFollowRouter);
 app.use("/stores" , storeRouter);
 app.use("/users" , userRouter);
+app.use("/wishlist" , wishlistRouter);
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
