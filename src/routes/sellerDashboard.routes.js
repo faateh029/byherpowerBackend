@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { verifyToken } from '../middleware/jwtMiddleware.js';
-import { allowedRole } from '../middleware/allowRole.js';
+import { verifyToken } from '../middleware/auth.middleware.js';
+import { allowedRole } from '../middleware/role.middleware.js';
 import {
   getSellerSalesSummaryController,
   getSellerInventoryStatsController
@@ -9,7 +9,7 @@ import {
 export const sellerDashboardRouter = Router();
 
 // Seller sales summary
-sellerDashboardRouter.get('/seller/dashboard/sales-summary', verifyToken, allowedRole("seller"), getSellerSalesSummaryController);
+sellerDashboardRouter.get('/sales-summary', verifyToken, allowedRole("seller"), getSellerSalesSummaryController);
 
 // Seller inventory stats
-sellerDashboardRouter.get('/seller/dashboard/inventory', verifyToken, allowedRole("seller"), getSellerInventoryStatsController);
+sellerDashboardRouter.get('/inventory', verifyToken, allowedRole("seller"), getSellerInventoryStatsController);
