@@ -207,9 +207,41 @@ export const updateProductController = async (req, res, next) => {
 
 // Function to delete a product (seller only)
 export const deleteProductController = async (req, res, next) => {
-  // Logic to delete a product from the database will go here
-  res.status(200).json({
-    success: true,
-    message: "Product deleted successfully."
-  });
+    try {
+        const productId = req.params.id;
+
+        // 1️⃣ Validate product ID format
+        if (!productId || productId.trim().length === 0) {
+            logger.warn(`Delete Product - Missing ID - User: ${req.user.id}`);
+            return next(new Error("Product ID is required."));
+        }
+
+        // 2️⃣ Find product
+        const product = await Product.findById(productId);
+        if (!product) {
+            logger.warn(`Delete Product - Not Found - ID: ${productId}`);
+            return next(new Error("Product not found."));
+        }
+
+        // 3️⃣ Check ownership (only the seller who created it can delete)
+        if (product.seller.toString() !== req.user.id) {
+            logger.warn(`Unauthorized Delete Attempt - Product ID: ${productId}, User: ${req.user.id}`);
+            return next(new Error("You are not authorized to delete this product."));
+        }
+
+        // 4️⃣ Delete product
+        await Product.findByIdAndDelete(productId);
+
+        logger.info(`Product Deleted - ID: ${productId}, Seller: ${req.user.id}`);
+
+        // 5️⃣ Respond to frontend
+        res.status(200).json({
+            success: true,
+            message: "Product deleted successfully."
+        });
+
+    } catch (err) {
+        logger.error(`Delete Product Error - ${err.message}`);
+        next(err);
+    }
 };
