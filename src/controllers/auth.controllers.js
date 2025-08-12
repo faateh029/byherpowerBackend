@@ -54,17 +54,70 @@ export const signupController = async (req, res, next) => {
 };
 
 export const loginController = async (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    message: "Login route is functional."
-  });
-};
+  try {
+    const { email, password } = req.body;
 
+    // 1. Validate inputs
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Email and password are required" });
+    }
+
+    // 2. Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // 3. Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // 4. Generate JWT
+    const payload = { id: user._id, role: user.role };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    // 5. Send token
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
 export const logoutController = async (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    message: "Logout route is functional."
-  });
+  try {
+    // Clear the cookie that stores the JWT
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // send only over HTTPS in production
+      sameSite: "strict",
+    });
+
+    // Optional: also clear refresh token cookie if you're using one
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const forgotPasswordController = async (req, res, next) => {
