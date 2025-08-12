@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(requestLogger);
 app.use("/auth", authRouter);
-app.use('/cart' , cartRouter);
+app.use("/cart" , cartRouter);
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
