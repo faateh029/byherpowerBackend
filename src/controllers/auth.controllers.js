@@ -1,6 +1,8 @@
 // controllers/auth.controllers.js
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import User from "../models/user.model.js"; // Assuming you have a User model
 import logger from "../config/logger.js";
 
@@ -121,17 +123,115 @@ export const logoutController = async (req, res, next) => {
 };
 
 export const forgotPasswordController = async (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    message: "Forgot password route is functional."
-  });
+  
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    
+    // For security: Always return same message even if user doesn't exist
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists, a password reset link has been sent to your email."
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    // Save token & expiry in DB
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset URL (frontend)
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    // Email message
+    const message = `
+      You requested a password reset.
+      Please click the link below to reset your password:
+      ${resetUrl}
+      If you did not request this, please ignore this email.
+    `;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Password Reset Request",
+      text: message
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "If an account exists, a password reset link has been sent to your email."
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
 };
 
+
 export const resetPasswordController = async (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    message: "Reset password route is functional."
-  });
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ msg: "Token and new password are required" });
+    }
+
+    // Hash incoming token to compare with DB stored hash
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Find user with valid token and not expired
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid or expired token" });
+    }
+
+    // Update password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Clear reset token fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    // Generate JWT for auto-login
+    const accessToken = jwt.sign(
+      { id: user._id, role: user.role }, // Add more claims if needed
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "1h" }
+    );
+
+    res.status(200).json({
+      msg: "Password reset successful. You are now logged in.",
+      token: accessToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const changePasswordController = async (req, res, next) => {
