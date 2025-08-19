@@ -255,6 +255,53 @@ export const resetPasswordController = async (req, res, next) => {
   }
 };
 
+export const changePasswordController = async (req, res, next) => {
+  try {
+    // 1. Get user ID from the authenticated request object (set by your auth middleware)
+    const userId = req.user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    // 2. Validate inputs
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: "Please provide both current and new passwords." });
+    }
+
+    // 3. Find the user by their ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    // 4. Compare the provided current password with the stored hashed password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Incorrect current password." });
+    }
+
+    // 5. Enforce strong password complexity for the new password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        message: "New password must be at least 8 characters long, contain an uppercase letter, a lowercase letter, a number, and a special character."
+      });
+    }
+
+    // 6. Hash the new password and save it
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    // 7. Send success response
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully."
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 // import bcrypt from "bcrypt";
 // import jwt from "jsonwebtoken";
 // import nodemailer from 'nodemailer';

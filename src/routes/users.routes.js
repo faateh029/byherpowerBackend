@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { allowedRole } from "../middleware/role.middleware.js";
+import { allowedRoles } from "../middleware/role.middleware.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import {
     getAllUsersController,
@@ -10,7 +10,7 @@ import {
 
 export const userRouter = Router();
 
-userRouter.get("/", verifyToken, allowedRole("admin"), getAllUsersController);
+userRouter.get("/", verifyToken, allowedRoles("admin"), getAllUsersController);
 userRouter.get("/:id", verifyToken, getUserByIdController);
 userRouter.put("/:id", verifyToken, updateUserController);
-userRouter.delete("/:id", verifyToken, allowedRole("admin"), deleteUserController);
+userRouter.delete("/:id", verifyToken, allowedRoles("admin"), deleteUserController);

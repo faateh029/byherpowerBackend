@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyToken } from '../middleware/auth.middleware.js';
-import { allowedRole } from '../middleware/role.middleware.js';
+import { allowedRoles } from '../middleware/role.middleware.js';
 import {
   getSalesReportController,
   getTopProductsController,
@@ -11,13 +11,13 @@ import {
 export const adminAnalyticsRouter = Router();
 
 // Sales report
-adminAnalyticsRouter.get('/analytics/sales', verifyToken, allowedRole("admin"), getSalesReportController);
+adminAnalyticsRouter.get('/analytics/sales', verifyToken, allowedRoles("admin"), getSalesReportController);
 
 // Top products
-adminAnalyticsRouter.get('/analytics/top-products', verifyToken, allowedRole("admin"), getTopProductsController);
+adminAnalyticsRouter.get('/analytics/top-products', verifyToken, allowedRoles("admin"), getTopProductsController);
 
 // Top sellers
-adminAnalyticsRouter.get('/analytics/top-sellers', verifyToken, allowedRole("admin"), getTopSellersController);
+adminAnalyticsRouter.get('/analytics/top-sellers', verifyToken, allowedRoles("admin"), getTopSellersController);
 
 // Revenue report
-adminAnalyticsRouter.get('/analytics/revenue', verifyToken, allowedRole("admin"), getRevenueReportController);
+adminAnalyticsRouter.get('/analytics/revenue', verifyToken, allowedRoles("admin"), getRevenueReportController);

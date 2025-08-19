@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyToken } from '../middleware/auth.middleware.js';
-import { allowedRole } from '../middleware/role.middleware.js';
+import { allowedRoles } from '../middleware/role.middleware.js';
 import {
   followStoreController,
   unfollowStoreController,
@@ -10,10 +10,10 @@ import {
 export const storeFollowRouter = Router();
 
 // Follow a store
-storeFollowRouter.post('/:storeId/follow', verifyToken, allowedRole("customer"), followStoreController);
+storeFollowRouter.post('/:storeId/follow', verifyToken, allowedRoles("customer"), followStoreController);
 
 // Unfollow a store
-storeFollowRouter.delete('/:storeId/unfollow', verifyToken, allowedRole("customer"), unfollowStoreController);
+storeFollowRouter.delete('/:storeId/unfollow', verifyToken, allowedRoles("customer"), unfollowStoreController);
 
 // Get all followed stores
-storeFollowRouter.get('/followed', verifyToken, allowedRole("customer"), getFollowedStoresController);
+storeFollowRouter.get('/followed', verifyToken, allowedRoles("customer"), getFollowedStoresController);

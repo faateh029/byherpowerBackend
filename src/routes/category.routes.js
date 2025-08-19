@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middleware/auth.middleware.js";
-import { allowedRole } from "../middleware/role.middleware.js";
+import { allowedRoles } from "../middleware/role.middleware.js";
 import {
     createCategoryController,
     getAllCategoriesController,
@@ -11,8 +11,8 @@ import {
 
 export const categoryRouter = Router();
 
-categoryRouter.post("/", verifyToken, allowedRole("admin"), createCategoryController);
+categoryRouter.post("/", verifyToken, allowedRoles("admin"), createCategoryController);
 categoryRouter.get("/", getAllCategoriesController);
 categoryRouter.get("/:id", getCategoryByIdController);
-categoryRouter.put("/:id", verifyToken, allowedRole("admin"), updateCategoryController);
-categoryRouter.delete("/:id", verifyToken, allowedRole("admin"), deleteCategoryController);
+categoryRouter.put("/:id", verifyToken, allowedRoles("admin"), updateCategoryController);
+categoryRouter.delete("/:id", verifyToken, allowedRoles("admin"), deleteCategoryController);

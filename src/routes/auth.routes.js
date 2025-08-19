@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { allowedRole } from "../middleware/role.middleware.js";
+import { allowedRoles } from "../middleware/role.middleware.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 
 import {

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../middleware/auth.middleware.js";
-import { allowedRole } from "../middleware/role.middleware.js";
+import { allowedRoles } from "../middleware/role.middleware.js";
 import {
     createProductController,
     getAllProductsController,
@@ -11,8 +11,8 @@ import {
 
 export const productRouter = Router();
 
-productRouter.post("/", verifyToken, allowedRole("seller"), createProductController);
+productRouter.post("/", verifyToken, allowedRoles("seller"), createProductController);
 productRouter.get("/", getAllProductsController);
 productRouter.get("/:id", getProductByIdController);
-productRouter.put("/:id", verifyToken, allowedRole("seller"), updateProductController);
-productRouter.delete("/:id", verifyToken, allowedRole("seller"), deleteProductController);
+productRouter.put("/:id", verifyToken, allowedRoles("seller"), updateProductController);
+productRouter.delete("/:id", verifyToken, allowedRoles("seller"), deleteProductController);
