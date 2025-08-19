@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema({
     enum: ["customer", "seller", "admin"], 
     default: "customer" 
   },
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
 
   store: { type: mongoose.Schema.Types.ObjectId, ref: "Store" }, // only if seller
 
