@@ -49,7 +49,7 @@ export const signupController = async (req, res, next) => {
       name,
       email,
       password: hashedPassword,
-      role: "user",
+      role: "customer",
     });
 
     // Generate JWT token for auto-login
@@ -135,6 +135,7 @@ export const logoutController = async (req, res, next) => {
 // Password Management Controllers
 // =========================================================================
 export const forgotPasswordController = async (req, res, next) => {
+  let user;
   try {
     const { email } = req.body;
 
@@ -142,7 +143,7 @@ export const forgotPasswordController = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-    const user = await User.findOne({ email });
+     user = await User.findOne({ email });
 
     // Security practice: Always return a generic success message to prevent email enumeration attacks
     if (!user) {
