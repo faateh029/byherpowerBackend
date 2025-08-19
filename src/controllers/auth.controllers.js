@@ -259,7 +259,7 @@ export const resetPasswordController = async (req, res, next) => {
 export const changePasswordController = async (req, res, next) => {
   try {
     // 1. Get user ID from the authenticated request object (set by your auth middleware)
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
     // 2. Validate inputs
