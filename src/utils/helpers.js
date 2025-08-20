@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import jwt from 'jsonwebtoken';
 
 export const sendEmail = async (options) => {
   // 1. Create a Nodemailer transporter with your SMTP details from environment variables
@@ -23,4 +24,11 @@ export const sendEmail = async (options) => {
 
   // 3. Send the email
   await transporter.sendMail(mailOptions);
+};
+
+
+export const signToken = (userId, role) => {
+  return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d"
+  });
 };

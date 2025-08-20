@@ -1,19 +1,19 @@
-import { Router } from 'express';
-import { verifyToken } from '../middleware/auth.middleware.js';
-import { allowedRoles } from '../middleware/role.middleware.js';
+import { Router } from "express";
+import { verifyToken } from "../middleware/auth.middleware.js";
+import { allowedRoles } from "../middleware/role.middleware.js";
 import {
   addWishlistItemController,
   removeWishlistItemController,
-  getWishlistController
-} from '../controllers/wishlistController.js';
+  getWishlistController,
+  clearWishlistController
+} from "../controllers/wishlistController.js";
 
 export const wishlistRouter = Router();
 
-// Add product to wishlist
-wishlistRouter.post('/add', verifyToken, allowedRoles("customer"), addWishlistItemController);
+// Customer only
+wishlistRouter.post("/add", verifyToken, allowedRoles("customer"), addWishlistItemController);
+wishlistRouter.delete("/remove/:productId", verifyToken, allowedRoles("customer"), removeWishlistItemController);
+wishlistRouter.get("/", verifyToken, allowedRoles("customer"), getWishlistController);
 
-// Remove product from wishlist
-wishlistRouter.delete('/remove/:productId', verifyToken, allowedRoles("customer"), removeWishlistItemController);
-
-// Get customer's wishlist
-wishlistRouter.get('/', verifyToken, allowedRoles("customer"), getWishlistController);
+// Extra
+wishlistRouter.delete("/clear", verifyToken, allowedRoles("customer"), clearWishlistController);

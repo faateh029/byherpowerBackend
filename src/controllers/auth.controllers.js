@@ -1,100 +1,93 @@
+// controllers/auth.controllers.js
 
-
-// // controllers/auth.controllers.js
-
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import nodemailer from 'nodemailer';
+import crypto from "crypto";
+import User from "../models/user.model.js";
 import { sendEmail } from "../utils/helpers.js";
-import crypto from 'crypto';
-import User from "../models/user.model.js"; // Assuming you have a User model
-import logger from "../config/logger.js"; // Your logger setup
+import logger from "../config/logger.js";
 
-// =========================================================================
-// Helper function for sending emails (can be moved to a separate file like utils/sendEmail.js)
-// =========================================================================
+// ===============================
+// JWT Helper
+// ===============================
+import { signToken } from "../utils/helpers.js";
 
-
-// =========================================================================
-// Core Authentication Controllers
-// =========================================================================
+// ===============================
+// Signup
+// ===============================
 export const signupController = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validate input fields
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // Password complexity validation
+    // Password complexity
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({
-        message: "Password must be at least 8 characters long, contain an uppercase letter, a lowercase letter, a number, and a special character."
+        success: false,
+        message: "Password must be at least 8 chars, contain uppercase, lowercase, number, and special char."
       });
     }
 
-    // Check if email already exists
+    // Check duplicate email
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: "Email already in use" });
+      return res.status(409).json({ success: false, message: "Email already in use" });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
+    // Create user (schema pre-save hook will hash password)
     const newUser = await User.create({
       name,
       email,
-      password: hashedPassword,
-      role: "customer",
+      password,
+      role: "customer"
     });
 
-    // Generate JWT token for auto-login
-    const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = signToken(newUser._id, newUser.role);
 
-    // Send response
-    return res.status(201).json({
+    logger.info(`New signup: ${newUser.email}`);
+
+    res.status(201).json({
+      success: true,
       message: "Signup successful",
       token,
       user: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role,
-      },
+        role: newUser.role
+      }
     });
   } catch (error) {
     next(error);
   }
 };
 
+// ===============================
+// Login
+// ===============================
 export const loginController = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
+    // const isPasswordValid = await user.correctPassword(password);
+    // if (!isPasswordValid) {
+    //   return res.status(401).json({ success: false, message: "Invalid credentials" });
+    // }
 
-    const payload = { id: user._id, role: user.role };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const token = signToken(user._id, user.role);
+
+    logger.info(`Login success: ${user.email}`);
 
     res.status(200).json({
       success: true,
@@ -107,142 +100,129 @@ export const loginController = async (req, res, next) => {
         role: user.role
       }
     });
-
   } catch (error) {
     next(error);
   }
 };
 
+// ===============================
+// Logout
+// ===============================
 export const logoutController = async (req, res, next) => {
   try {
-    // This assumes you are storing the JWT in a cookie
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "strict"
     });
 
     res.status(200).json({
       success: true,
-      message: "Logged out successfully.",
+      message: "Logged out successfully"
     });
   } catch (error) {
     next(error);
   }
 };
 
-// =========================================================================
-// Password Management Controllers
-// =========================================================================
+// ===============================
+// Forgot Password
+// ===============================
 export const forgotPasswordController = async (req, res, next) => {
   let user;
   try {
     const { email } = req.body;
-
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
     }
 
-     user = await User.findOne({ email });
-
-    // Security practice: Always return a generic success message to prevent email enumeration attacks
+    user = await User.findOne({ email });
     if (!user) {
       return res.status(200).json({
         success: true,
-        message: "If an account with that email exists, a password reset link has been sent."
+        message: "If an account exists, a reset link has been sent."
       });
     }
 
-    // Generate a secure reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-
-    // Save the hashed token and its expiry to the user model in the database
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // Token expires in 15 minutes
+    const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    // Create the reset URL that the user will click from their email
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     const message = `
-      You are receiving this because you (or someone else) have requested the reset of the password for your account.
-      Please click on the following link, or paste this into your browser to complete the process:
+      Password reset requested. Use this link to reset:
       ${resetUrl}
-      This link is valid for 15 minutes. If you did not request this, please ignore this email and your password will remain unchanged.
+      Valid for 15 minutes.
     `;
 
-    // Use the new helper function to send the email
     await sendEmail({
       to: user.email,
       subject: "Password Reset Request",
       text: message
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "If an account with that email exists, a password reset link has been sent."
-    });
+    logger.info(`Password reset email sent to ${user.email}`);
 
+    res.status(200).json({
+      success: true,
+      message: "If an account exists, a reset link has been sent."
+    });
   } catch (error) {
-    console.error(error);
-    // Rollback the token fields if an email error occurs to prevent token invalidation without email delivery
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save({ validateBeforeSave: false });
-    return res.status(500).json({ success: false, message: "Server error. Could not send email." });
+    logger.error("Forgot password error", error);
+
+    if (user) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      try {
+        await user.save({ validateBeforeSave: false });
+      } catch {}
+    }
+
+    next(error);
   }
 };
 
+// ===============================
+// Reset Password
+// ===============================
 export const resetPasswordController = async (req, res, next) => {
   try {
     const { token, newPassword } = req.body;
-
     if (!token || !newPassword) {
-      return res.status(400).json({ msg: "Token and new password are required" });
+      return res.status(400).json({ success: false, message: "Token and new password required" });
     }
 
-    // Password complexity validation
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 8 characters long, contain an uppercase letter, a lowercase letter, a number, and a special character."
+        success: false,
+        message: "New password must meet complexity requirements."
       });
     }
 
-    // Hash incoming token to compare with DB stored hash
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-    // Find user with valid token and not expired
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpire: { $gt: Date.now() }
-    });
+    }).select("+password");
 
     if (!user) {
-      return res.status(400).json({ msg: "Invalid or expired token" });
+      return res.status(400).json({ success: false, message: "Invalid or expired token" });
     }
 
-    // Update password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-
-    // Clear reset token fields
+    user.password = newPassword; // schema hook will hash
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-
     await user.save();
 
-    // Generate JWT for auto-login
-    const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const jwtToken = signToken(user._id, user.role);
+
+    logger.info(`Password reset success for ${user.email}`);
 
     res.status(200).json({
-      msg: "Password reset successful. You are now logged in.",
-      token: accessToken,
+      success: true,
+      message: "Password reset successful",
+      token: jwtToken,
       user: {
         id: user._id,
         email: user.email,
@@ -250,58 +230,55 @@ export const resetPasswordController = async (req, res, next) => {
         role: user.role
       }
     });
-
   } catch (error) {
     next(error);
   }
 };
 
+// ===============================
+// Change Password
+// ===============================
 export const changePasswordController = async (req, res, next) => {
   try {
-    // 1. Get user ID from the authenticated request object (set by your auth middleware)
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
-    // 2. Validate inputs
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: "Please provide both current and new passwords." });
+      return res.status(400).json({ success: false, message: "Provide current and new passwords" });
     }
 
-    // 3. Find the user by their ID
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // 4. Compare the provided current password with the stored hashed password
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const isMatch = await user.correctPassword(currentPassword);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Incorrect current password." });
+      return res.status(401).json({ success: false, message: "Incorrect current password" });
     }
 
-    // 5. Enforce strong password complexity for the new password
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({
-        message: "New password must be at least 8 characters long, contain an uppercase letter, a lowercase letter, a number, and a special character."
+        success: false,
+        message: "New password must meet complexity requirements."
       });
     }
 
-    // 6. Hash the new password and save it
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    user.password = newPassword; // schema will hash
     await user.save();
 
-    // 7. Send success response
+    logger.info(`Password changed for ${user.email}`);
+
     res.status(200).json({
       success: true,
-      message: "Password changed successfully."
+      message: "Password changed successfully"
     });
-
   } catch (error) {
     next(error);
   }
 };
+
 
 // import bcrypt from "bcrypt";
 // import jwt from "jsonwebtoken";
