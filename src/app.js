@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import{authRouter} from './routes/auth.routes.js';
-import  errorHandler from "./middleware/error.middleware.js";
+import  {errorHandler} from "./middleware/error.middleware.js";
 import connectDB from "./config/db.js";
 import requestLogger from "./middleware/requestLogger.middleware.js";
 import { cartRouter } from "./routes/cart.routes.js";
